@@ -1,0 +1,121 @@
+.issue-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease;
+}
+
+.issue-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Header ─────────────────────────────── */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.issue-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* ── Status Badge ───────────────────────── */
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-open {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-in-progress {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-closed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* ── Description ────────────────────────── */
+.issue-description {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Footer ─────────────────────────────── */
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.dates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.created-at,
+.updated-at {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ── Buttons ─────────────────────────────── */
+.btn {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-edit {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.btn-edit:hover {
+  background: #bae6fd;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-delete:hover {
+  background: #fecaca;
+}

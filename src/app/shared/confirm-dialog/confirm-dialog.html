@@ -1,0 +1,15 @@
+<!-- Backdrop overlay -->
+<div class="dialog-backdrop" (click)="onCancel()">
+
+  <!-- Dialog box — stop click from bubbling to backdrop -->
+  <div class="dialog-box" (click)="$event.stopPropagation()">
+
+    <p class="dialog-message">{{ message() }}</p>
+
+    <div class="dialog-actions">
+      <button class="btn-cancel" (click)="onCancel()">Cancel</button>
+      <button class="btn-confirm" (click)="onConfirm()">Delete</button>
+    </div>
+
+  </div>
+</div>

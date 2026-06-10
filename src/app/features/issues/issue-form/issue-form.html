@@ -1,0 +1,73 @@
+<div class="form-page">
+  <div class="form-card">
+
+    <!-- Title -->
+    <h2 class="form-title">
+      {{ isEditMode() ? 'Edit Issue' : 'New Issue' }}
+    </h2>
+
+    <!-- Loading state (when fetching issue in edit mode) -->
+    @if (isLoading() && isEditMode()) {
+      <p class="state-message">Loading...</p>
+    }
+
+    <!-- Error -->
+    @if (errorMessage()) {
+      <div class="form-error">{{ errorMessage() }}</div>
+    }
+
+    <!-- Form -->
+    <form [formGroup]="issueForm" (ngSubmit)="onSubmit()">
+
+      <!-- Title field -->
+      <div class="field">
+        <label for="title">Title <span class="required">*</span></label>
+        <input
+          id="title"
+          type="text"
+          formControlName="title"
+          placeholder="Issue title"
+        />
+        @if (issueForm.get('title')?.invalid && issueForm.get('title')?.touched) {
+          <span class="field-error">Title is required.</span>
+        }
+      </div>
+
+      <!-- Description field -->
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          formControlName="description"
+          rows="4"
+          placeholder="Provide more details (optional)"
+        ></textarea>
+      </div>
+
+      <!-- Status field — only shown in edit mode (new issues always start as Open) -->
+      @if (isEditMode()) {
+        <div class="field">
+          <label for="status">Status</label>
+          <select id="status" formControlName="status">
+            @for (option of statusOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onCancel()">Cancel</button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="issueForm.invalid || isLoading()"
+        >
+          {{ isEditMode() ? 'Save Changes' : 'Create Issue' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>

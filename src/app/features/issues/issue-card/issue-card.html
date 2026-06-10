@@ -1,0 +1,27 @@
+<div class="issue-card">
+  <div class="card-header">
+    <h3 class="issue-title">{{ issue().title }}</h3>
+    <span class="status-badge" [ngClass]="'status-' + issue().status.toLowerCase().replace(' ', '-')">
+      {{ issue().status }}
+    </span>
+  </div>
+
+  <p class="issue-description" *ngIf="issue().description">
+    {{ issue().description }}
+  </p>
+
+  <div class="card-footer">
+    <div class="dates">
+      <span class="created-at">Created: {{ issue().created_at | date: 'mediumDate' }}</span>
+      @if (issue().updated_at) {
+        <span class="updated-at">Updated: {{ issue().updated_at | date: 'mediumDate' }}</span>
+      }
+    </div>
+
+    <div class="card-actions">
+      <button class="btn btn-edit" (click)="onEdit()">Edit</button>
+      <button class="btn btn-delete" (click)="onDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+

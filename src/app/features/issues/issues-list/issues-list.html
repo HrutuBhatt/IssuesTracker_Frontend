@@ -1,0 +1,47 @@
+<div class="issues-list-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>Issues</h1>
+    <button class="btn-primary" (click)="navigateToCreate()">+ New Issue</button>
+  </div>
+
+  <!-- Loading state -->
+  @if (isLoading()) {
+    <div class="state-message">Loading issues...</div>
+  }
+
+  <!-- Error state -->
+  @if (errorMessage()) {
+    <div class="state-error">{{ errorMessage() }}</div>
+  }
+
+  <!-- Empty state -->
+  @if (!isLoading() && !errorMessage() && issues().length === 0) {
+    <div class="state-message">No issues yet. Create your first one!</div>
+  }
+
+  <!-- Issues grid -->
+  @if (issues().length > 0) {
+    <div class="issues-grid">
+      @for (issue of issues(); track issue.id) {
+        <app-issue-card
+          [issue]="issue"
+          (edit)="onEdit($event)"
+          (delete)="onDelete($event)"
+        />
+      }
+    </div>
+  }
+
+  <!-- Delete confirmation dialog — only shown when an issue is pending deletion -->
+  @if (pendingDeleteIssue()) {
+    <app-confirm-dialog
+      [message]="'Delete &quot;' + pendingDeleteIssue()!.title + ' &quot; ?'"
+      (confirmed)="onDeleteConfirmed()"
+      (cancelled)="onDeleteCancelled()"
+    />
+  }
+
+</div>
+

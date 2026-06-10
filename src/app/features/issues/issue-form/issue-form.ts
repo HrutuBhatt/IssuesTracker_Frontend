@@ -1,22 +1,29 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormGroup, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { IssueService } from '../../../core/services/issue.service';
 import { IssueStatus, ISSUE_STATUSES } from '../../../core/models/issue.model';
+import { SanitizeInputDirective } from '../../../shared/directives/sanitize-input.directive';
 
 @Component({
   selector: 'app-issue-form',
   standalone: true,
   templateUrl: './issue-form.html',
   styleUrl: './issue-form.css',
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, SanitizeInputDirective],
 })
-export class IssueFormComponent implements OnInit {
+export class IssueFormComponent implements OnInit, OnDestroy {
   private route        = inject(ActivatedRoute);
   private router       = inject(Router);
   private issueService = inject(IssueService);
+  private fb           = inject(FormBuilder);
+
+  // Subject to trigger cleanup on component destruction
+  private destroy$ = new Subject<void>();
 
   // Mode detection, same form for create and update
   editId       = signal<number | null>(null);
@@ -26,12 +33,13 @@ export class IssueFormComponent implements OnInit {
 
   readonly statusOptions = ISSUE_STATUSES;
 
-  // nonNullable: true — getRawValue() returns string/IssueStatus, never null
-  issueForm = new FormGroup({
-    title:       new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
-    description: new FormControl(''),
-    status:      new FormControl<IssueStatus>('Open', { nonNullable: true }),
+  // nonNullable form definition using FormBuilder
+  issueForm = this.fb.nonNullable.group({
+    title:       ['', [Validators.required, Validators.maxLength(100)]],
+    description: [''],
+    status:      ['Open' as IssueStatus],
   });
+
 
   ngOnInit(): void {
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -45,23 +53,31 @@ export class IssueFormComponent implements OnInit {
     // else → create mode, form stays empty
   }
 
+  ngOnDestroy(): void {
+    // Emit and complete the Subject to clean up all active subscriptions
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadIssue(id: number): void {
     this.isLoading.set(true);
 
-    this.issueService.getById(id).subscribe({
-      next: (issue) => {
-        this.issueForm.patchValue({
-          title:       issue.title,
-          description: issue.description ?? '',
-          status:      issue.status,
-        });
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        this.errorMessage.set(err.message ?? 'Failed to load issue.');
-        this.isLoading.set(false);
-      },
-    });
+    this.issueService.getById(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (issue) => {
+          this.issueForm.patchValue({
+            title:       issue.title,
+            description: issue.description ?? '',
+            status:      issue.status,
+          });
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          this.errorMessage.set(err.message ?? 'Failed to load issue.');
+          this.isLoading.set(false);
+        },
+      });
   }
 
   onSubmit(): void {
@@ -78,13 +94,15 @@ export class IssueFormComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    request$.subscribe({
-      next:  ()    => this.router.navigate(['/issues']),
-      error: (err) => {
-        this.errorMessage.set(err.message ?? 'Failed to save issue.');
-        this.isLoading.set(false);
-      },
-    });
+    request$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next:  ()    => this.router.navigate(['/issues']),
+        error: (err) => {
+          this.errorMessage.set(err.message ?? 'Failed to save issue.');
+          this.isLoading.set(false);
+        },
+      });
   }
 
   onCancel(): void {

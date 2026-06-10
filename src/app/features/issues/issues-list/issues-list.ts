@@ -1,5 +1,6 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Issue } from '../../../core/models/issue.model';
 import { IssueService } from '../../../core/services/issue.service';
@@ -16,6 +17,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 export class IssuesListComponent implements OnInit {
   private issueService = inject(IssueService);
   private router       = inject(Router);
+  private destroyRef   = inject(DestroyRef);
 
   issues       = signal<Issue[]>([]);
   isLoading    = signal(false);
@@ -32,16 +34,18 @@ export class IssuesListComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.issueService.getAll().subscribe({
-      next: (data) => {
-        this.issues.set(data);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        this.errorMessage.set(err.message ?? 'Failed to load issues.');
-        this.isLoading.set(false);
-      },
-    });
+    this.issueService.getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          this.issues.set(data);
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          this.errorMessage.set(err.message ?? 'Failed to load issues.');
+          this.isLoading.set(false);
+        },
+      });
   }
 
   onEdit(issue: Issue): void {
@@ -56,15 +60,17 @@ export class IssuesListComponent implements OnInit {
     const issue = this.pendingDeleteIssue();
     if (!issue) return;
 
-    this.pendingDeleteIssue.set(null)
-    this.issueService.delete(issue.id).subscribe({
-      next: () => {
-        this.issues.update((list) => list.filter((i) => i.id !== issue.id));
-      },
-      error: (err) => {
-        this.errorMessage.set(err.message ?? 'Failed to delete issue.');
-      },
-    });
+    this.pendingDeleteIssue.set(null);
+    this.issueService.delete(issue.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.issues.update((list) => list.filter((i) => i.id !== issue.id));
+        },
+        error: (err) => {
+          this.errorMessage.set(err.message ?? 'Failed to delete issue.');
+        },
+      });
   }
 
   onDeleteCancelled(): void {
@@ -75,4 +81,3 @@ export class IssuesListComponent implements OnInit {
     this.router.navigate(['/issues/new']);
   }
 }
-

@@ -26,6 +26,7 @@
           id="title"
           type="text"
           formControlName="title"
+          appSanitizeInput
           placeholder="Issue title"
         />
         @if (issueForm.get('title')?.invalid && issueForm.get('title')?.touched) {
@@ -39,6 +40,7 @@
         <textarea
           id="description"
           formControlName="description"
+          appSanitizeInput
           rows="4"
           placeholder="Provide more details (optional)"
         ></textarea>

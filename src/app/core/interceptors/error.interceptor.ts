@@ -10,6 +10,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         userMessage = 'Cannot connect to the server. Please check your connection.';
       } else if (error.status === 400) {
         userMessage = error.error?.detail ?? 'Invalid request data.';
+      } else if (error.status === 401) {
+        userMessage = error.error?.detail ?? 'Invalid credentials.';
       } else if (error.status === 404) {
         userMessage = error.error?.detail ?? 'The requested resource was not found.';
       } else if (error.status === 422) {

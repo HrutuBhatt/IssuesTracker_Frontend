@@ -1,0 +1,70 @@
+<div class="signup-container">
+  <div class="signup-card">
+    <div class="signup-header">
+      <h2>Create Account</h2>
+      <p>Get started with Issue Tracker</p>
+    </div>
+
+    @if (errorMessage()) {
+      <div class="alert-error">
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input 
+          id="email" 
+          type="email" 
+          formControlName="email" 
+          placeholder="you@example.com" 
+          autocomplete="email"
+        />
+        @if (signupForm.controls.email.touched && signupForm.controls.email.invalid) {
+          <span class="error-text">Please enter a valid email address.</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          id="password" 
+          type="password" 
+          formControlName="password" 
+          placeholder="••••••••" 
+          autocomplete="new-password"
+        />
+        @if (signupForm.controls.password.touched && signupForm.controls.password.invalid) {
+          <span class="error-text">Password must be at least 6 characters.</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input 
+          id="confirmPassword" 
+          type="password" 
+          formControlName="confirmPassword" 
+          placeholder="••••••••" 
+          autocomplete="new-password"
+        />
+        @if (signupForm.controls.confirmPassword.touched && signupForm.controls.confirmPassword.invalid) {
+          <span class="error-text">Confirm password is required.</span>
+        }
+        @if (signupForm.touched && signupForm.errors?.['passwordMismatch']) {
+          <span class="error-text">Passwords do not match.</span>
+        }
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="isLoading()">
+        {{ isLoading() ? 'Creating Account...' : 'Sign Up' }}
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account? 
+      <a routerLink="/login" class="auth-link">Sign In</a>
+    </div>
+  </div>
+</div>

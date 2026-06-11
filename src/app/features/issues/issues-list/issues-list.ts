@@ -6,6 +6,7 @@ import { Issue } from '../../../core/models/issue.model';
 import { IssueService } from '../../../core/services/issue.service';
 import { IssueCardComponent } from '../issue-card/issue-card';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-issues-list',
@@ -18,6 +19,8 @@ export class IssuesListComponent implements OnInit {
   private issueService = inject(IssueService);
   private router       = inject(Router);
   private destroyRef   = inject(DestroyRef);
+  private authService  = inject(AuthService);
+
 
   issues       = signal<Issue[]>([]);
   isLoading    = signal(false);
@@ -80,4 +83,9 @@ export class IssuesListComponent implements OnInit {
   navigateToCreate(): void {
     this.router.navigate(['/issues/new']);
   }
+
+  onLogout(): void {
+    this.authService.logout();
+  }
 }
+

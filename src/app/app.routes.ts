@@ -4,7 +4,7 @@ import { authGuard, guestGuard } from './core/guards/auth.guard';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'issues',
+    redirectTo: 'projects',
     pathMatch: 'full',
   },
   {
@@ -20,33 +20,44 @@ export const routes: Routes = [
       import('./features/auth/signup/signup').then((m) => m.SignupComponent),
   },
   {
-    path: 'issues',
+    path: 'projects',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/issues/issues-list/issues-list').then(
-        (m) => m.IssuesListComponent
+      import('./features/projects/project-list/project-list').then(
+        (m) => m.ProjectListComponent
       ),
   },
   {
-    path: 'issues/new',
+    path: 'projects/:id',
     canActivate: [authGuard],
     loadComponent: () =>
-      import('./features/issues/issue-form/issue-form').then(
-        (m) => m.IssueFormComponent
+      import('./features/projects/project-layout/project-layout').then(
+        (m) => m.ProjectLayoutComponent
       ),
-  },
-  {
-    path: 'issues/edit/:id',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/issues/issue-form/issue-form').then(
-        (m) => m.IssueFormComponent
-      ),
+    children: [
+      {
+        path: '',
+        redirectTo: 'issues',
+        pathMatch: 'full',
+      },
+      {
+        path: 'issues',
+        loadComponent: () =>
+          import('./features/projects/issues-workspace/issues-workspace').then(
+            (m) => m.IssuesWorkspaceComponent
+          ),
+      },
+      {
+        path: 'members',
+        loadComponent: () =>
+          import('./features/projects/manage-members/manage-members').then(
+            (m) => m.ManageMembersComponent
+          ),
+      },
+    ],
   },
   {
     path: '**',
-    redirectTo: 'issues',
+    redirectTo: 'projects',
   },
 ];
-
-

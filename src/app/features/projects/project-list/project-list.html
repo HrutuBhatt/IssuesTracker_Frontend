@@ -1,0 +1,94 @@
+<div class="dashboard-container">
+  <!-- Top Navigation Header -->
+  <header class="dashboard-header">
+    <div class="logo-area">
+      <h1>Issue Tracker</h1>
+    </div>
+    <div class="user-actions">
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- Dashboard Main Grid -->
+  <main class="dashboard-content">
+    <!-- Projects Section -->
+    <section class="projects-section">
+      <div class="section-header">
+        <h2>Your Projects</h2>
+        <span class="badge" *ngIf="projects().length">{{ projects().length }} projects</span>
+      </div>
+
+      <div *ngIf="errorMessage()" class="error-banner">
+        <span>{{ errorMessage() }}</span>
+        <button class="close-btn" (click)="errorMessage.set(null)">×</button>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="isLoading()" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading projects...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!isLoading() && !projects().length" class="empty-state">
+        <h3>No projects yet</h3>
+        <p>Get started by creating a new project on the right.</p>
+      </div>
+
+      <!-- Projects Grid -->
+      <div *ngIf="!isLoading() && projects().length" class="projects-grid">
+        <a [routerLink]="['/projects', project.id]" class="project-card" *ngFor="let project of projects()">
+          <div class="project-card-header">
+            <h3>{{ project.name }}</h3>
+          </div>
+          <p class="project-desc">{{ project.description || 'No description provided.' }}</p>
+          <div class="project-meta">
+            <span>Created on {{ project.created_at | date:'mediumDate' }}</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Create Project Form Sidebar -->
+    <aside class="create-project-sidebar">
+      <div class="form-card">
+        <h3>Create New Project</h3>
+        <p class="form-subtitle">Group issues and collaborate with team members.</p>
+        
+        <form [formGroup]="projectForm" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label for="name">Project Name <span class="required">*</span></label>
+            <input
+              id="name"
+              type="text"
+              formControlName="name"
+              placeholder="e.g. Issue Tracker"
+              class="form-control"
+              [class.is-invalid]="projectForm.controls.name.invalid && projectForm.controls.name.touched"
+            />
+            <div *ngIf="projectForm.controls.name.invalid && projectForm.controls.name.touched" class="invalid-feedback">
+              <span *ngIf="projectForm.controls.name.errors?.['required']">Project name is required.</span>
+              <span *ngIf="projectForm.controls.name.errors?.['maxlength']">Name cannot exceed 50 characters.</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea
+              id="description"
+              formControlName="description"
+              placeholder="Brief summary of the project goals..."
+              rows="4"
+              class="form-control"
+            ></textarea>
+          </div>
+
+          <button type="submit" class="submit-btn" [disabled]="projectForm.invalid || isCreating()">
+            <span *ngIf="isCreating()">Creating...</span>
+            <span *ngIf="!isCreating()">Create Project</span>
+          </button>
+        </form>
+      </div>
+    </aside>
+  </main>
+</div>

@@ -1,0 +1,275 @@
+<div class="workspace-split-layout">
+  <!-- Left Side: Issues List Sidebar -->
+  <aside class="issues-list-pane">
+    <div class="pane-header">
+      <h3>Issues</h3>
+      <button 
+        *ngIf="canCreateOrUpdate()" 
+        class="create-issue-btn" 
+        (click)="openCreateModal()"
+      >
+        + New Issue
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoadingList()" class="pane-loading">
+      <div class="mini-spinner"></div>
+      <p>Loading issues...</p>
+    </div>
+
+    <!-- Empty List State -->
+    <div *ngIf="!isLoadingList() && !issues().length" class="pane-empty">
+      <p>No issues in this project yet.</p>
+    </div>
+
+    <!-- Issues List -->
+    <div *ngIf="!isLoadingList() && issues().length" class="issues-scroll-container">
+      <div 
+        *ngFor="let issue of issues()" 
+        class="issue-list-item"
+        [class.selected]="selectedIssue()?.id === issue.id"
+        (click)="selectIssue(issue)"
+      >
+        <div class="item-header">
+          <span class="status-badge" [class]="issue.status">
+            {{ statusLabels[issue.status] }}
+          </span>
+          <span class="date">{{ issue.created_at | date:'shortDate' }}</span>
+        </div>
+        <h4 class="issue-item-title">{{ issue.title }}</h4>
+        <div class="item-footer">
+          <span class="assignee-text">Assignee: {{ getMemberEmail(issue.assigned_to) }}</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Side: Issue Details Main Panel -->
+  <section class="issue-details-pane">
+    <!-- Empty State -->
+    <div *ngIf="!selectedIssue()" class="empty-details">
+      <h3>No Issue Selected</h3>
+      <p>Select an issue from the list on the left to view its details, history, and status.</p>
+    </div>
+
+    <!-- Loading Details Overlay -->
+    <div *ngIf="selectedIssue() && isLoadingDetails()" class="pane-loading-overlay">
+      <div class="spinner"></div>
+      <p>Fetching issue details...</p>
+    </div>
+
+    <!-- Issue Details Content -->
+    <div *ngIf="selectedIssue() && !isLoadingDetails()" class="details-content">
+      <!-- Toolbar -->
+      <div class="details-toolbar">
+        <span class="issue-number">Issue #{{ selectedIssue()?.id }}</span>
+        <div class="action-buttons">
+          <button 
+            *ngIf="canCreateOrUpdate()" 
+            class="action-btn edit"
+            (click)="openEditModal()"
+          >
+            Edit Issue
+          </button>
+          <button 
+            *ngIf="canDelete()" 
+            class="action-btn delete"
+            (click)="onDeleteIssue()"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Fields -->
+      <div class="details-body">
+        <h2 class="issue-detail-title">{{ selectedIssue()?.title }}</h2>
+        
+        <!-- Status & Assignee Controls -->
+        <div class="meta-controls-grid">
+          <div class="control-box">
+            <label for="statusSelect">Status</label>
+            <select 
+              id="statusSelect"
+              [disabled]="isClient()" 
+              (change)="onQuickStatusChange($event)"
+              class="quick-select"
+            >
+              <option 
+                *ngFor="let opt of statusOptions" 
+                [value]="opt"
+                [selected]="selectedIssue()?.status === opt"
+              >
+                {{ statusLabels[opt] }}
+              </option>
+            </select>
+          </div>
+
+          <div class="control-box">
+            <label for="assigneeSelect">Assignee</label>
+            <select 
+              id="assigneeSelect"
+              [disabled]="isClient()" 
+              (change)="onQuickAssigneeChange($event)"
+              class="quick-select"
+            >
+              <option 
+                value="null"
+                [selected]="selectedIssue()?.assigned_to === null || selectedIssue()?.assigned_to === undefined"
+              >
+                Unassigned
+              </option>
+              <option 
+                *ngFor="let member of members()" 
+                [value]="member.user_id.toString()"
+                [selected]="selectedIssue()?.assigned_to === member.user_id"
+              >
+                {{ member.email }} ({{ member.role | titlecase }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="description-section">
+          <h3>Description</h3>
+          <div class="description-text">
+            {{ selectedIssue()?.description || 'No description provided.' }}
+          </div>
+        </div>
+
+        <!-- Issue Audit History -->
+        <div class="history-section">
+          <h3>Activity Logs</h3>
+          <div *ngIf="!issueHistory().length" class="empty-history">
+            No activity logged yet.
+          </div>
+          <div *ngIf="issueHistory().length" class="history-timeline">
+            <div class="timeline-item" *ngFor="let log of issueHistory()">
+              <div class="timeline-content">
+                <p class="timeline-text">
+                  <strong>{{ getMemberEmail(log.changed_by) }}</strong> changed
+                  <span class="field-badge">{{ log.field_changed }}</span>
+                  from 
+                  <span class="val-badge">{{ log.field_changed === 'assigned_to' ? getMemberEmail(log.old_value ? +log.old_value : null) : (log.old_value || 'none') }}</span>
+                  to 
+                  <span class="val-badge">{{ log.field_changed === 'assigned_to' ? getMemberEmail(log.new_value ? +log.new_value : null) : (log.new_value || 'none') }}</span>
+                </p>
+                <span class="timeline-time">{{ log.changed_at | date:'medium' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- MODALS for Create and Edit Issue -->
+ 
+<!-- Create Issue Modal -->
+<div class="modal-backdrop" *ngIf="showCreateModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Create New Issue</h3>
+      <button class="modal-close-btn" (click)="closeCreateModal()">×</button>
+    </div>
+    <form [formGroup]="issueForm" (ngSubmit)="onCreateSubmit()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="title">Title <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="title" 
+            appSanitizeInput
+            formControlName="title" 
+            placeholder="Summarize the issue..."
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="desc">Description</label>
+          <textarea 
+            id="desc" 
+            appSanitizeInput
+            formControlName="description" 
+            placeholder="Add optional description details..."
+            rows="5"
+            class="form-control"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="assignee">Assignee</label>
+          <select id="assignee" formControlName="assigned_to" class="form-control">
+            <option [value]="null">Unassigned</option>
+            <option *ngFor="let member of members()" [value]="member.user_id">
+              {{ member.email }} ({{ member.role | titlecase }})
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeCreateModal()">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="issueForm.invalid || isSaving()">
+          {{ isSaving() ? 'Saving...' : 'Create Issue' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Issue Modal -->
+<div class="modal-backdrop" *ngIf="showEditModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Edit Issue</h3>
+      <button class="modal-close-btn" (click)="closeEditModal()">×</button>
+    </div>
+    <form [formGroup]="issueForm" (ngSubmit)="onEditSubmit()">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-title">Title <span class="required">*</span></label>
+          <input 
+            type="text" 
+            id="edit-title" 
+            appSanitizeInput
+            formControlName="title" 
+            placeholder="Summarize the issue..."
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-desc">Description</label>
+          <textarea 
+            id="edit-desc" 
+            appSanitizeInput
+            formControlName="description" 
+            placeholder="Add details..."
+            rows="5"
+            class="form-control"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-assignee">Assignee</label>
+          <select id="edit-assignee" formControlName="assigned_to" class="form-control">
+            <option [value]="null">Unassigned</option>
+            <option *ngFor="let member of members()" [value]="member.user_id">
+              {{ member.email }} ({{ member.role | titlecase }})
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeEditModal()">Cancel</button>
+        <button type="submit" class="btn-submit" [disabled]="issueForm.invalid || isSaving()">
+          {{ isSaving() ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

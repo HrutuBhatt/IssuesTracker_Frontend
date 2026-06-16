@@ -44,7 +44,7 @@ export class SignupComponent {
     this.authService.register(email, password).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/issues']);
+        this.router.navigate(['/projects']);
       },
       error: (err) => {
         this.isLoading.set(false);

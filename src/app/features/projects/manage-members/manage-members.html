@@ -1,0 +1,140 @@
+<div class="members-dashboard-grid">
+  <!-- Left Column: Active Members Table -->
+  <section class="members-list-section">
+    <div class="section-title-area">
+      <h3>Active Members</h3>
+      <span class="member-count-badge" *ngIf="members().length">
+        {{ members().length }} total
+      </span>
+    </div>
+
+    <!-- Error Banner -->
+    <div *ngIf="errorMessage()" class="error-banner">
+      <span>{{ errorMessage() }}</span>
+      <button class="close-btn" (click)="errorMessage.set(null)">×</button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading members...</p>
+    </div>
+
+    <!-- Members Table -->
+    <div *ngIf="!isLoading() && members().length" class="table-container">
+      <table class="members-table">
+        <thead>
+          <tr>
+            <th>User Email</th>
+            <th>Role</th>
+            <th>Joined At</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let member of members()">
+            <td class="user-email-cell">
+              {{ member.email }}
+              <span class="self-tag" *ngIf="isSelf(member)">You</span>
+            </td>
+            <td>
+              <select
+                [disabled]="isSelf(member)"
+                (change)="onRoleChange(member, $event)"
+                class="table-select"
+              >
+                <option 
+                  *ngFor="let role of availableRoles" 
+                  [value]="role"
+                  [selected]="member.role === role"
+                >
+                  {{ role | titlecase }}
+                </option>
+              </select>
+            </td>
+            <td class="date-cell">{{ member.joined_at | date:'mediumDate' }}</td>
+            <td class="actions-col">
+              <button
+                *ngIf="!isSelf(member)"
+                class="remove-btn"
+                (click)="onRemoveMember(member)"
+              >
+                Remove
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Right Sidebar: Invite Section -->
+  <aside class="invite-sidebar">
+    <div class="invite-form-card">
+      <h3>Invite Member</h3>
+      <p class="card-subtitle">Search for an active user and assign them a project role.</p>
+
+      <form [formGroup]="addMemberForm" (ngSubmit)="onAddMemberSubmit()">
+        <!-- User Search Input -->
+        <div class="form-group search-group">
+          <label for="userSearch">User Email <span class="required">*</span></label>
+          <input
+            id="userSearch"
+            type="text"
+            appSanitizeInput
+            [value]="searchQuery()"
+            (input)="onSearchInput($event)"
+            placeholder="Type email to search..."
+            autocomplete="off"
+            class="form-control"
+          />
+
+          <!-- Auto-complete Suggestions Dropdown -->
+          <ul class="suggestions-list" *ngIf="suggestions().length">
+            <li 
+              *ngFor="let sug of suggestions()" 
+              (click)="selectUser(sug)"
+            >
+              {{ sug.email }}
+            </li>
+          </ul>
+
+          <div *ngIf="!selectedUser() && searchQuery().trim() && !suggestions().length" class="no-suggestions-alert">
+            No matching unregistered users found
+          </div>
+        </div>
+
+        <!-- Role Select -->
+        <div class="form-group">
+          <label for="memberRole">Project Role <span class="required">*</span></label>
+          <select id="memberRole" formControlName="role" class="form-control">
+            <option *ngFor="let role of availableRoles" [value]="role">
+              {{ role | titlecase }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Action Button -->
+        <button
+          type="submit"
+          class="invite-submit-btn"
+          [disabled]="!selectedUser() || isSubmitting()"
+        >
+          <span>{{ isSubmitting() ? 'Inviting...' : 'Add Member' }}</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Danger Zone Card for Project Deletion (Admins Only) -->
+    <!-- <div class="danger-zone-card" *ngIf="isAdmin()">
+      <p class="danger-text">Permanently delete this project and all of its issues. This action cannot be undone.</p>
+      <button 
+        type="button" 
+        class="delete-project-btn" 
+        (click)="onDeleteProject()"
+      >
+        Delete Project
+      </button>
+    </div> -->
+  </aside>
+</div>

@@ -1,7 +1,7 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError } from 'rxjs';
+import { Observable, tap, catchError, throwError, finalize, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface TokenResponse {
@@ -15,6 +15,11 @@ export interface UserPayload {
   exp: number; // expiration timestamp
 }
 
+export interface User {
+  id: number;
+  email: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -22,6 +27,7 @@ export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
   private readonly baseUrl = `${environment.apiBaseUrl}/auth`;
+  private refreshSubscription$: Observable<TokenResponse> | null = null;
 
 
   currentUser = signal<UserPayload | null>(null);
@@ -46,13 +52,17 @@ export class AuthService {
   }
 
   refresh(): Observable<TokenResponse> {
+    if (this.refreshSubscription$) {
+      return this.refreshSubscription$;
+    }
+
     const refreshToken = localStorage.getItem('refresh_token');
     if (!refreshToken) {
       this.clearSession();
       return throwError(() => new Error('No refresh token available'));
     }
 
-    return this.http.post<TokenResponse>(`${this.baseUrl}/refresh`, { refresh_token: refreshToken }).pipe(
+    this.refreshSubscription$ = this.http.post<TokenResponse>(`${this.baseUrl}/refresh`, { refresh_token: refreshToken }).pipe(
       tap((res) => {
         localStorage.setItem('access_token', res.access_token);
         localStorage.setItem('refresh_token', res.refresh_token);
@@ -63,8 +73,14 @@ export class AuthService {
       catchError((err) => {
         this.clearSession();
         return throwError(() => err);
-      })
+      }),
+      finalize(() => {
+        this.refreshSubscription$ = null;
+      }),
+      shareReplay(1)
     );
+
+    return this.refreshSubscription$;
   }
 
   logout(): void {
@@ -82,6 +98,10 @@ export class AuthService {
 
   getAccessToken(): string | null {
     return localStorage.getItem('access_token');
+  }
+
+  searchUsers(email: string): Observable<User[]> {
+    return this.http.get<User[]>(`${this.baseUrl}/users/search`, { params: { email } });
   }
 
   private handleAuthentication(res: TokenResponse): void {

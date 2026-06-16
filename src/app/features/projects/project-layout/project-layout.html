@@ -1,0 +1,52 @@
+<div class="workspace-container">
+  <!-- Top Bar for Project Details -->
+  <header class="workspace-header">
+    <div class="project-title-area">
+      <a routerLink="/projects" class="back-link">← Projects</a>
+      <div class="separator">/</div>
+      <h2 *ngIf="project()">{{ project()?.name }}</h2>
+    </div>
+    
+    <div class="role-badge" *ngIf="userRole()">
+      <span>Role: <strong>{{ userRole() | titlecase }}</strong></span>
+    </div>
+  </header>
+
+  <!-- Error and Loading States -->
+  <div *ngIf="isLoading()" class="state-overlay">
+    <div class="spinner"></div>
+    <p>Loading project workspace...</p>
+  </div>
+
+  <div *ngIf="!isLoading() && errorMessage()" class="state-overlay error">
+    <h3>Access Denied</h3>
+    <p>{{ errorMessage() }}</p>
+    <a routerLink="/projects" class="back-btn">Go to Projects</a>
+  </div>
+
+  <!-- Workspace Sub-tabs Navigation -->
+  <ng-container *ngIf="!isLoading() && !errorMessage()">
+    <nav class="workspace-tabs">
+      <a 
+        routerLink="issues" 
+        routerLinkActive="active" 
+        class="tab-link"
+      >
+        Issues
+      </a>
+      <a 
+        *ngIf="isAdmin()"
+        routerLink="members" 
+        routerLinkActive="active" 
+        class="tab-link"
+      >
+        Manage Users
+      </a>
+    </nav>
+
+    <!-- Nested Workspace Views -->
+    <main class="workspace-body">
+      <router-outlet></router-outlet>
+    </main>
+  </ng-container>
+</div>

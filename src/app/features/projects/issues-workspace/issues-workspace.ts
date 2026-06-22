@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { IssueService } from '../../../core/services/issue.service';
 import { ProjectService, ProjectMember } from '../../../core/services/project.service';
+import { AssistantService } from '../../../core/services/assistant.service';
 import { ProjectLayoutComponent } from '../project-layout/project-layout';
 import { Issue, IssueHistory, IssueStatus, ISSUE_STATUSES, STATUS_LABELS } from '../../../core/models/issue.model';
 import { SanitizeInputDirective } from '../../../shared/directives/sanitize-input.directive';
@@ -17,6 +18,7 @@ import { SanitizeInputDirective } from '../../../shared/directives/sanitize-inpu
 export class IssuesWorkspaceComponent implements OnInit {
   private issueService = inject(IssueService);
   private projectService = inject(ProjectService);
+  private assistantService = inject(AssistantService);
   private parent = inject(ProjectLayoutComponent);
   private fb = inject(FormBuilder);
 
@@ -45,6 +47,13 @@ export class IssuesWorkspaceComponent implements OnInit {
   showCreateModal = signal(false);
   showEditModal = signal(false);
   isSaving = signal(false);
+
+  // Assistant Panel
+  assistantOpen = signal(false);
+  assistantPrompt = signal('');
+  assistantReply = signal<string | null>(null);
+  assistantLoading = signal(false);
+  assistantError = signal<string | null>(null);
 
   // Role Permissions
   canCreateOrUpdate = computed(() => this.userRole() === 'admin' || this.userRole() === 'developer');
@@ -245,6 +254,38 @@ export class IssuesWorkspaceComponent implements OnInit {
         error: (err) => alert(err.error?.detail || 'Failed to delete issue.'),
       });
     }
+  }
+
+  toggleAssistant(): void {
+    this.assistantOpen.update((v) => !v);
+    if (!this.assistantOpen()) {
+      this.assistantReply.set(null);
+      this.assistantError.set(null);
+    }
+  }
+
+  submitAssistantPrompt(): void {
+    const prompt = this.assistantPrompt().trim();
+    if (!prompt || this.assistantLoading()) return;
+
+    this.assistantLoading.set(true);
+    this.assistantReply.set(null);
+    this.assistantError.set(null);
+
+    this.assistantService.ask(this.projectId(), prompt).subscribe({
+      next: (res) => {
+        this.assistantReply.set(res.reply);
+        this.assistantPrompt.set('');
+        this.assistantLoading.set(false);
+        if (res.issues_modified) {
+          this.loadIssues();
+        }
+      },
+      error: (err) => {
+        this.assistantError.set(err.error?.detail || 'Assistant request failed.');
+        this.assistantLoading.set(false);
+      },
+    });
   }
 
   // Helper Methods

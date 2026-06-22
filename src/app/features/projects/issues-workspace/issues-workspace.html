@@ -1,15 +1,20 @@
-<div class="workspace-split-layout">
+<div class="workspace-split-layout" [class.assistant-active]="assistantOpen()">
   <!-- Left Side: Issues List Sidebar -->
   <aside class="issues-list-pane">
     <div class="pane-header">
       <h3>Issues</h3>
-      <button 
-        *ngIf="canCreateOrUpdate()" 
-        class="create-issue-btn" 
-        (click)="openCreateModal()"
-      >
-        + New Issue
-      </button>
+      <div class="header-actions">
+        <button
+          *ngIf="canCreateOrUpdate()"
+          class="create-issue-btn"
+          (click)="openCreateModal()"
+        >
+          + New Issue
+        </button>
+        <button class="assistant-toggle-btn" (click)="toggleAssistant()">
+          {{ assistantOpen() ? 'Hide AI' : 'AI' }}
+        </button>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -42,6 +47,50 @@
           <span class="assignee-text">Assignee: {{ getMemberEmail(issue.assigned_to) }}</span>
         </div>
       </div>
+    </div>
+  </aside>
+
+  <!-- AI Assistant Panel (collapsible middle column) -->
+  <aside class="assistant-pane" *ngIf="assistantOpen()">
+    <div class="assistant-header">
+      <h4>AI Assistant</h4>
+      <button class="modal-close-btn" (click)="toggleAssistant()">×</button>
+    </div>
+
+    <div class="assistant-reply-area">
+      <div *ngIf="assistantReply()" class="assistant-reply">{{ assistantReply() }}</div>
+      <div *ngIf="assistantError()" class="assistant-error">{{ assistantError() }}</div>
+      <div *ngIf="assistantLoading()" class="assistant-loading">
+        <div class="mini-spinner"></div>
+        <span>Thinking...</span>
+      </div>
+      <div *ngIf="!assistantReply() && !assistantError() && !assistantLoading()" class="assistant-hint">
+        <p>Ask about your issues, for example:</p>
+        <ul>
+          <li>"How many open issues are there?"</li>
+          <li>"Create an issue: Fix the login timeout"</li>
+          <li>"Close issue #3"</li>
+          <li>"Mark all in-progress issues as closed"</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="assistant-input-area">
+      <textarea
+        [value]="assistantPrompt()"
+        (input)="assistantPrompt.set($any($event.target).value)"
+        placeholder="Ask about issues..."
+        rows="3"
+        class="form-control"
+        [disabled]="assistantLoading()"
+      ></textarea>
+      <button
+        class="btn-submit"
+        (click)="submitAssistantPrompt()"
+        [disabled]="!assistantPrompt().trim() || assistantLoading()"
+      >
+        {{ assistantLoading() ? 'Working...' : 'Send' }}
+      </button>
     </div>
   </aside>
 

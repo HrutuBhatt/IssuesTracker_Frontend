@@ -34,7 +34,8 @@ export class AuthService {
   isAuthenticated = signal<boolean>(false);
 
   constructor() {
-    this.autoLogin();
+    //resolve circular dependency issue
+    Promise.resolve().then(() => this.autoLogin());
   }
 
   register(email: string, password: string): Observable<TokenResponse> {

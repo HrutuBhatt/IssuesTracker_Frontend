@@ -1,7 +1,17 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .workspace-split-layout {
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 .workspace-split-layout.assistant-active {
   grid-template-columns: 320px 320px 1fr;
@@ -14,6 +24,7 @@
   background: #fff;
   border-right: 1px solid #dee2e6;
   overflow: hidden;
+  min-height: 0;
 }
 .pane-header {
   display: flex;
@@ -76,6 +87,7 @@
   background: #f8f9fa;
   border-right: 1px solid #dee2e6;
   overflow: hidden;
+  min-height: 0;
 }
 .assistant-header {
   display: flex;
@@ -148,6 +160,7 @@
   background: #fff;
   padding: 24px;
   overflow-y: auto;
+  min-height: 0;
 }
 .empty-details {
   text-align: center;

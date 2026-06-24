@@ -54,17 +54,20 @@
   <aside class="assistant-pane" *ngIf="assistantOpen()">
     <div class="assistant-header">
       <h4>AI Assistant</h4>
-      <button class="modal-close-btn" (click)="toggleAssistant()">×</button>
+      <div class="assistant-header-actions">
+        <button
+          *ngIf="conversationHistory().length"
+          class="new-chat-btn"
+          (click)="clearConversation()"
+          title="Start a new conversation"
+        >New Chat</button>
+        <button class="modal-close-btn" (click)="toggleAssistant()">×</button>
+      </div>
     </div>
 
-    <div class="assistant-reply-area">
-      <div *ngIf="assistantReply()" class="assistant-reply">{{ assistantReply() }}</div>
-      <div *ngIf="assistantError()" class="assistant-error">{{ assistantError() }}</div>
-      <div *ngIf="assistantLoading()" class="assistant-loading">
-        <div class="mini-spinner"></div>
-        <span>Thinking...</span>
-      </div>
-      <div *ngIf="!assistantReply() && !assistantError() && !assistantLoading()" class="assistant-hint">
+    <div class="chat-thread" #chatThread>
+      <!-- Empty state hint -->
+      <div *ngIf="!conversationHistory().length && !assistantLoading()" class="assistant-hint">
         <p>Ask about your issues, for example:</p>
         <ul>
           <li>"How many open issues are there?"</li>
@@ -73,13 +76,35 @@
           <li>"Mark all in-progress issues as closed"</li>
         </ul>
       </div>
+
+      <!-- Conversation messages -->
+      <div
+        *ngFor="let msg of conversationHistory()"
+        class="chat-message"
+        [class.user-message]="msg.role === 'user'"
+        [class.assistant-message]="msg.role === 'assistant'"
+      >
+        <div class="message-bubble">{{ msg.content }}</div>
+      </div>
+
+      <!-- Loading bubble -->
+      <div *ngIf="assistantLoading()" class="chat-message assistant-message">
+        <div class="message-bubble loading-bubble">
+          <div class="mini-spinner"></div>
+          <span>Thinking...</span>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="assistantError()" class="assistant-error">{{ assistantError() }}</div>
     </div>
 
     <div class="assistant-input-area">
       <textarea
         [value]="assistantPrompt()"
         (input)="assistantPrompt.set($any($event.target).value)"
-        placeholder="Ask about issues..."
+        (keydown.enter)="onPromptKeydown($any($event))"
+        placeholder="Ask about issues... (Enter to send, Shift+Enter for newline)"
         rows="3"
         class="form-control"
         [disabled]="assistantLoading()"

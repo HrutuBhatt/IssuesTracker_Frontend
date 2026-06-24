@@ -1,9 +1,9 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { IssueService } from '../../../core/services/issue.service';
 import { ProjectService, ProjectMember } from '../../../core/services/project.service';
-import { AssistantService } from '../../../core/services/assistant.service';
+import { AssistantService, ConversationMessage } from '../../../core/services/assistant.service';
 import { ProjectLayoutComponent } from '../project-layout/project-layout';
 import { Issue, IssueHistory, IssueStatus, ISSUE_STATUSES, STATUS_LABELS } from '../../../core/models/issue.model';
 import { SanitizeInputDirective } from '../../../shared/directives/sanitize-input.directive';
@@ -51,9 +51,11 @@ export class IssuesWorkspaceComponent implements OnInit {
   // Assistant Panel
   assistantOpen = signal(false);
   assistantPrompt = signal('');
-  assistantReply = signal<string | null>(null);
+  conversationHistory = signal<ConversationMessage[]>([]);
   assistantLoading = signal(false);
   assistantError = signal<string | null>(null);
+
+  @ViewChild('chatThread') private chatThread!: ElementRef<HTMLDivElement>;
 
   // Role Permissions
   canCreateOrUpdate = computed(() => this.userRole() === 'admin' || this.userRole() === 'developer');
@@ -259,9 +261,14 @@ export class IssuesWorkspaceComponent implements OnInit {
   toggleAssistant(): void {
     this.assistantOpen.update((v) => !v);
     if (!this.assistantOpen()) {
-      this.assistantReply.set(null);
-      this.assistantError.set(null);
+      this.assistantError.set(null);  // clear error but keep history
     }
+  }
+
+  clearConversation(): void {
+    this.conversationHistory.set([]);
+    this.assistantPrompt.set('');
+    this.assistantError.set(null);
   }
 
   submitAssistantPrompt(): void {
@@ -269,23 +276,43 @@ export class IssuesWorkspaceComponent implements OnInit {
     if (!prompt || this.assistantLoading()) return;
 
     this.assistantLoading.set(true);
-    this.assistantReply.set(null);
     this.assistantError.set(null);
 
-    this.assistantService.ask(this.projectId(), prompt).subscribe({
+    // Trim to last 20 messages (10 turns) before sending
+    const history = this.conversationHistory().slice(-20);
+
+    this.assistantService.ask(this.projectId(), prompt, history).subscribe({
       next: (res) => {
-        this.assistantReply.set(res.reply);
+        this.conversationHistory.update((h) => [
+          ...h,
+          { role: 'user', content: prompt },
+          { role: 'assistant', content: res.reply },
+        ]);
         this.assistantPrompt.set('');
         this.assistantLoading.set(false);
-        if (res.issues_modified) {
-          this.loadIssues();
-        }
+        if (res.issues_modified) this.loadIssues();
+        this.scrollToBottom();
       },
       error: (err) => {
         this.assistantError.set(err.error?.detail || 'Assistant request failed.');
         this.assistantLoading.set(false);
+        this.scrollToBottom();
       },
     });
+  }
+
+  onPromptKeydown(event: KeyboardEvent): void {
+    if (!event.shiftKey) {
+      event.preventDefault();
+      this.submitAssistantPrompt();
+    }
+  }
+
+  private scrollToBottom(): void {
+    setTimeout(() => {
+      const el = this.chatThread?.nativeElement;
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 0);
   }
 
   // Helper Methods

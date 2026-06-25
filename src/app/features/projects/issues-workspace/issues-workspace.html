@@ -37,14 +37,16 @@
         (click)="selectIssue(issue)"
       >
         <div class="item-header">
-          <span class="status-badge" [class]="issue.status">
-            {{ statusLabels[issue.status] }}
-          </span>
+          <span class="status-badge" [class]="issue.status">{{ statusLabels[issue.status] }}</span>
           <span class="date">{{ issue.created_at | date:'shortDate' }}</span>
         </div>
         <h4 class="issue-item-title">{{ issue.title }}</h4>
+        <div class="item-tags">
+          <span class="tag tag-type-{{ issue.issue_type }}">{{ typeLabels[issue.issue_type] }}</span>
+          <span class="tag tag-priority-{{ issue.priority }}">{{ priorityLabels[issue.priority] }}</span>
+        </div>
         <div class="item-footer">
-          <span class="assignee-text">Assignee: {{ getMemberEmail(issue.assigned_to) }}</span>
+          <span class="assignee-text">{{ getMemberEmail(issue.assigned_to) }}</span>
         </div>
       </div>
     </div>
@@ -182,25 +184,57 @@
 
           <div class="control-box">
             <label for="assigneeSelect">Assignee</label>
-            <select 
+            <select
               id="assigneeSelect"
-              [disabled]="isClient()" 
+              [disabled]="isClient()"
               (change)="onQuickAssigneeChange($event)"
               class="quick-select"
             >
-              <option 
+              <option
                 value="null"
                 [selected]="selectedIssue()?.assigned_to === null || selectedIssue()?.assigned_to === undefined"
               >
                 Unassigned
               </option>
-              <option 
-                *ngFor="let member of members()" 
+              <option
+                *ngFor="let member of members()"
                 [value]="member.user_id.toString()"
                 [selected]="selectedIssue()?.assigned_to === member.user_id"
               >
                 {{ member.email }} ({{ member.role | titlecase }})
               </option>
+            </select>
+          </div>
+
+          <div class="control-box">
+            <label for="prioritySelect">Priority</label>
+            <select
+              id="prioritySelect"
+              [disabled]="isClient()"
+              (change)="onQuickPriorityChange($event)"
+              class="quick-select"
+            >
+              <option
+                *ngFor="let p of priorityOptions"
+                [value]="p"
+                [selected]="selectedIssue()?.priority === p"
+              >{{ priorityLabels[p] }}</option>
+            </select>
+          </div>
+
+          <div class="control-box">
+            <label for="typeSelect">Type</label>
+            <select
+              id="typeSelect"
+              [disabled]="isClient()"
+              (change)="onQuickIssueTypeChange($event)"
+              class="quick-select"
+            >
+              <option
+                *ngFor="let t of typeOptions"
+                [value]="t"
+                [selected]="selectedIssue()?.issue_type === t"
+              >{{ typeLabels[t] }}</option>
             </select>
           </div>
         </div>
@@ -275,6 +309,21 @@
           ></textarea>
         </div>
 
+        <div class="form-row">
+          <div class="form-group">
+            <label for="priority">Priority <span class="required">*</span></label>
+            <select id="priority" formControlName="priority" class="form-control">
+              <option *ngFor="let p of priorityOptions" [value]="p">{{ priorityLabels[p] }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="issue_type">Type</label>
+            <select id="issue_type" formControlName="issue_type" class="form-control">
+              <option *ngFor="let t of typeOptions" [value]="t">{{ typeLabels[t] }}</option>
+            </select>
+          </div>
+        </div>
+
         <div class="form-group">
           <label for="assignee">Assignee</label>
           <select id="assignee" formControlName="assigned_to" class="form-control">
@@ -326,6 +375,21 @@
             rows="5"
             class="form-control"
           ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit-priority">Priority <span class="required">*</span></label>
+            <select id="edit-priority" formControlName="priority" class="form-control">
+              <option *ngFor="let p of priorityOptions" [value]="p">{{ priorityLabels[p] }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-issue_type">Type</label>
+            <select id="edit-issue_type" formControlName="issue_type" class="form-control">
+              <option *ngFor="let t of typeOptions" [value]="t">{{ typeLabels[t] }}</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-group">

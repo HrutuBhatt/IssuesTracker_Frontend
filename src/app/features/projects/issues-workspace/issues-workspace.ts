@@ -5,7 +5,11 @@ import { IssueService } from '../../../core/services/issue.service';
 import { ProjectService, ProjectMember } from '../../../core/services/project.service';
 import { AssistantService, ConversationMessage } from '../../../core/services/assistant.service';
 import { ProjectLayoutComponent } from '../project-layout/project-layout';
-import { Issue, IssueHistory, IssueStatus, ISSUE_STATUSES, STATUS_LABELS } from '../../../core/models/issue.model';
+import {
+  Issue, IssueHistory, IssueStatus, IssuePriority, IssueType,
+  ISSUE_STATUSES, ISSUE_PRIORITIES, ISSUE_TYPES,
+  STATUS_LABELS, PRIORITY_LABELS, TYPE_LABELS,
+} from '../../../core/models/issue.model';
 import { SanitizeInputDirective } from '../../../shared/directives/sanitize-input.directive';
 
 @Component({
@@ -63,12 +67,18 @@ export class IssuesWorkspaceComponent implements OnInit {
   isClient = computed(() => this.userRole() === 'client');
 
   statusOptions = ISSUE_STATUSES;
+  priorityOptions = ISSUE_PRIORITIES;
+  typeOptions = ISSUE_TYPES;
   statusLabels = STATUS_LABELS;
+  priorityLabels = PRIORITY_LABELS;
+  typeLabels = TYPE_LABELS;
 
   // Form definition
   issueForm = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(100)]],
     description: [''],
+    priority: ['medium' as IssuePriority, Validators.required],
+    issue_type: ['triage' as IssueType, Validators.required],
     assigned_to: [null as number | null],
   });
 
@@ -161,11 +171,43 @@ export class IssuesWorkspaceComponent implements OnInit {
     });
   }
 
+  onQuickPriorityChange(event: Event): void {
+    const newPriority = (event.target as HTMLSelectElement).value as IssuePriority;
+    const issue = this.selectedIssue();
+    if (!issue || this.isClient()) return;
+
+    this.issueService.update(issue.id, { title: issue.title, priority: newPriority }).subscribe({
+      next: (updated) => {
+        this.selectedIssue.set(updated);
+        this.refreshIssuesList(updated);
+        this.selectIssue(updated);
+      },
+      error: (err) => alert(err.error?.detail || 'Failed to update priority.'),
+    });
+  }
+
+  onQuickIssueTypeChange(event: Event): void {
+    const newType = (event.target as HTMLSelectElement).value as IssueType;
+    const issue = this.selectedIssue();
+    if (!issue || this.isClient()) return;
+
+    this.issueService.update(issue.id, { title: issue.title, issue_type: newType }).subscribe({
+      next: (updated) => {
+        this.selectedIssue.set(updated);
+        this.refreshIssuesList(updated);
+        this.selectIssue(updated);
+      },
+      error: (err) => alert(err.error?.detail || 'Failed to update issue type.'),
+    });
+  }
+
   // Modals operations
   openCreateModal(): void {
     this.issueForm.reset({
       title: '',
       description: '',
+      priority: 'medium',
+      issue_type: 'triage',
       assigned_to: null,
     });
     this.showCreateModal.set(true);
@@ -179,10 +221,12 @@ export class IssuesWorkspaceComponent implements OnInit {
     if (this.issueForm.invalid) return;
     this.isSaving.set(true);
 
-    const { title, description, assigned_to } = this.issueForm.getRawValue();
+    const { title, description, priority, issue_type, assigned_to } = this.issueForm.getRawValue();
     const payload = {
       title,
       description: description || undefined,
+      priority,
+      issue_type,
       assigned_to: assigned_to || undefined,
     };
 
@@ -207,6 +251,8 @@ export class IssuesWorkspaceComponent implements OnInit {
     this.issueForm.setValue({
       title: issue.title,
       description: issue.description || '',
+      priority: issue.priority,
+      issue_type: issue.issue_type ?? 'triage',
       assigned_to: issue.assigned_to,
     });
     this.showEditModal.set(true);
@@ -221,10 +267,12 @@ export class IssuesWorkspaceComponent implements OnInit {
     if (this.issueForm.invalid || !issue) return;
     this.isSaving.set(true);
 
-    const { title, description, assigned_to } = this.issueForm.getRawValue();
+    const { title, description, priority, issue_type, assigned_to } = this.issueForm.getRawValue();
     const payload = {
       title,
       description: description || undefined,
+      priority,
+      issue_type: issue_type || null,
       assigned_to: assigned_to || null,
     };
 

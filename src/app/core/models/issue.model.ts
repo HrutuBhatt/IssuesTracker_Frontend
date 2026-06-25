@@ -1,12 +1,30 @@
 export type IssueStatus = 'open' | 'in_progress' | 'closed';
+export type IssuePriority = 'low' | 'medium' | 'high' | 'critical';
+export type IssueType = 'bug' | 'feature' | 'change-request' | 'triage';
 
-// Runtime array - used in dropdowns/templates
+// Runtime arrays - used in dropdowns/templates
 export const ISSUE_STATUSES: IssueStatus[] = ['open', 'in_progress', 'closed'];
+export const ISSUE_PRIORITIES: IssuePriority[] = ['low', 'medium', 'high', 'critical'];
+export const ISSUE_TYPES: IssueType[] = ['bug', 'feature', 'change-request', 'triage'];
 
 export const STATUS_LABELS: Record<IssueStatus, string> = {
   open: 'Open',
   in_progress: 'In Progress',
-  closed: 'Closed'
+  closed: 'Closed',
+};
+
+export const PRIORITY_LABELS: Record<IssuePriority, string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  critical: 'Critical',
+};
+
+export const TYPE_LABELS: Record<IssueType, string> = {
+  bug: 'Bug',
+  feature: 'Feature',
+  'change-request': 'Change Request',
+  triage: 'Triage',
 };
 
 // Matches IssueResponse schema from the backend
@@ -16,6 +34,8 @@ export interface Issue {
   title: string;
   description: string | null;
   status: IssueStatus;
+  priority: IssuePriority;
+  issue_type: IssueType;
   created_by: number;
   assigned_to: number | null;
   created_at: string;
@@ -26,6 +46,8 @@ export interface Issue {
 export interface CreateIssueDto {
   title: string;
   description?: string;
+  priority: IssuePriority;
+  issue_type: IssueType;
   assigned_to?: number | null;
 }
 
@@ -34,6 +56,8 @@ export interface UpdateIssueDto {
   title?: string;
   description?: string;
   status?: IssueStatus;
+  priority?: IssuePriority;
+  issue_type?: IssueType | null;
   assigned_to?: number | null;
 }
 
